@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, time, pickle, sys, logging, re, random, threading, configparser
+import os, time, pickle, sys, logging, re, random, threading, configparser, requests, json
 #画像ダウンロード
 from urllib import request
 
@@ -65,6 +65,7 @@ driver1_2 = webdriver.Chrome(options=options)
 driver1_3 = webdriver.Chrome(options=options)
 if mode == 2:
     driver2_1 = webdriver.Chrome(options=options)
+    driver2_2 = webdriver.Chrome(options=options)
     driver2_3 = webdriver.Chrome(options=options)
 
 #Yay!サーバー接続確認
@@ -80,8 +81,10 @@ try:
         logging.info("Browser2_1 Connection check...")
         driver2_1.get('https://yay.space/timeline/following')
         WebDriverWait(driver2_1, 5).until(EC.presence_of_all_elements_located)
+        driver2_2.get('https://yay.space/timeline/following')
+        WebDriverWait(driver2_2, 5).until(EC.presence_of_all_elements_located)
         driver2_3.get('https://yay.space/timeline/following')
-        WebDriverWait(driver2_1, 5).until(EC.presence_of_all_elements_located)
+        WebDriverWait(driver2_3, 5).until(EC.presence_of_all_elements_located)
     logging.info("All Connected successfully...")
 except:
     logging.error("Browser Connection timed out...!!")
@@ -162,12 +165,16 @@ def login():
             cookies = pickle.load(open("cache/" + email2 + "/cookies.pkl", "rb"))
             for cookie in cookies:
                 driver2_1.add_cookie(cookie)
+                driver2_2.add_cookie(cookie)
                 driver2_3.add_cookie(cookie)
             driver2_1.refresh()
+            driver2_2.refresh()
             driver2_3.refresh()
             WebDriverWait(driver2_1, 5).until(EC.presence_of_all_elements_located)
+            WebDriverWait(driver2_2, 5).until(EC.presence_of_all_elements_located)
             WebDriverWait(driver2_3, 5).until(EC.presence_of_all_elements_located)
             driver2_1.find_element_by_class_name('Header__profile__a')
+            driver2_2.find_element_by_class_name('Header__profile__a')
             driver2_3.find_element_by_class_name('Header__profile__a')
             logging.info("Logged in to SubAccount from saved information...")
         except:
@@ -200,14 +207,18 @@ def login():
             logging.info("Browser2_1 Login completed...")
 
             #ブラウザー3 クッキーからログイン
-            logging.info("Browser2_3 Start login...")
+            logging.info("Browser2_2 and Browser2_3 Start login...")
             cookies = pickle.load(open("cache/" + email2 + "/cookies.pkl", "rb"))
             for cookie in cookies:
+                driver2_2.add_cookie(cookie)
                 driver2_3.add_cookie(cookie)
+            driver2_2.refresh()
             driver2_3.refresh()
+            WebDriverWait(driver2_2, 5).until(EC.presence_of_all_elements_located)
             WebDriverWait(driver2_3, 5).until(EC.presence_of_all_elements_located)
+            driver2_2.find_element_by_class_name('Header__profile__a')
             driver2_3.find_element_by_class_name('Header__profile__a')
-            logging.info("Browser2_3 Login completed...")
+            logging.info("Browser2_2 and Browser2_3 Login completed...")
 
 #----------------------------------------------------------------------------------------------------#
 
@@ -330,6 +341,61 @@ def main():
 
 #----------------------------------------------------------------------------------------------------#
 
+def main_sub():
+
+    #チャットページ 接続
+    try:
+        driver2_2.get('https://yay.space/timeline/all?modalMode=1')
+        WebDriverWait(driver2_2, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/dl/a[1]')))
+    except:
+        logging.error("Connection timed out...!!")
+        sys.exit()
+
+
+    #チャット監視
+    while alive:
+        x = 0
+        while x <= 40 and alive:
+            try:
+                #チャット画面の1番上部、textを監視
+                try: text_s = driver2_2.find_elements_by_class_name('RecommendUsers__item.RecommendUsers__item--chatroom')[x]
+                except:
+                    x = 0
+                    continue
+                x = x + 1
+                try: text_s.find_element_by_class_name('Badge')
+                except: continue
+                #textオブジェクト以外のエラー回避
+                text = text_s.find_element_by_class_name('RecommendUsers__item__p').text
+            except:
+                #textオブジェクト以外は既読して戻る
+                text_s.find_element_by_class_name('RecommendUsers__item__p').click()
+                WebDriverWait(driver2_2, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/div/div/p[1]')))
+                driver2_2.get('https://yay.space/timeline/all?modalMode=1')
+                WebDriverWait(driver2_2, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/dl/a[1]')))
+                continue
+
+
+            text_s.find_element_by_class_name('RecommendUsers__item__p').click()
+            WebDriverWait(driver2_2, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/div/div/p[1]')))
+            last_mes = driver2_2.find_elements_by_class_name('Messages__item')[-1]
+            try: last_text = (last_mes.find_element_by_class_name('Messages__item__span.Messages__item__span--text').text).split("\n")[0]
+            except:
+                driver2_2.get('https://yay.space/timeline/all?modalMode=1')
+                WebDriverWait(driver2_2, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/dl/a[1]')))
+                continue
+
+            payload = {'apikey':'DZZF3AKLPDL2kxbRRWXwvIwxbGUWEZQ7', 'query':last_text}
+            r = requests.request("POST", "https://api.a3rt.recruit-tech.co.jp/talk/v1/smalltalk", data=payload).json()
+            try: driver2_2.find_element_by_class_name('ReplyForm__input').send_keys(str(r['results'][0]['reply']))
+            except: pass
+            driver2_2.find_element_by_class_name('Button.Button--green.Button--icon-chat-send.Button--wrap-content').click()
+
+            driver2_2.get('https://yay.space/timeline/all?modalMode=1')
+            WebDriverWait(driver2_2, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/dl/a[1]')))
+
+#----------------------------------------------------------------------------------------------------#
+
 def auto_c():
 
     #みんなの投稿ページ 接続
@@ -364,7 +430,7 @@ def auto_c():
         ok_list = [] #いいね済みのリスト
         z = 1 #1ページに存在する投稿のいいね制限用
 
-        while z <= 15:
+        while z <= 15 and alive:
 
             z = z + 1
             if sel == 1:
@@ -642,13 +708,16 @@ if __name__ == "__main__":
         login()
         threading.Thread(target = auto_c).start()
         threading.Thread(target = main).start()
+        threading.Thread(target = main_sub).start()
         #threading.Thread(target = auto_share).start()
+
         thread_list = threading.enumerate()
         thread_list.remove(threading.main_thread())
         for thread in thread_list:
             thread.join()
     except KeyboardInterrupt:
         alive = False
+        time.sleep(5)
         #Ctrl+Cによるプログラム強制終了によるブラウザ強制終了対策
         #ドライバーを終了させる
         logging.warning("KeyboardInterruptをキャッチしたため、ブラウザを強制終了します")
@@ -657,5 +726,6 @@ if __name__ == "__main__":
         driver1_3.quit()
         if mode == 2:
             driver2_1.quit()
+            driver2_2.quit()
             driver2_3.quit()
         pass
