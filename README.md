@@ -29,51 +29,8 @@ This is the description of this source code. Please read before use.
 当プログラムを使用するには上記、動作条件を満たす必要があります。  
 To use this program, you must meet the above requirements.
 
-最初に必要なパッケージをインストールします。Python3のインストールも同時に行ってください。  
-Install the required packages first.At this point, install Python3 yourself.
-```sh
-$ yum -y install libX11 GConf2 fontconfig unzip wget
-```
-
-ChromeDriverを公式サイトからダウンロードしてインストールします。  
-Download and install ChromeDriver from the official website.
-```sh
-$ wget https://chromedriver.storage.googleapis.com/80.0.3987.106/chromedriver_linux64.zip
-$ unzip chromedriver_linux64.zip
-$ mv chromedriver /usr/local/bin/
-$ chmod 755 /usr/local/bin/chromedriver
-```
-
-GoogleChromeをインストールします。  
-Install GoogleChrome.
-```sh
-$ vi /etc/yum.repos.d/google-chrome.repo
------ 以下を書き込む（Write the following） -----
-[google-chrome]
-name=google-chrome
-baseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64
-enabled=1
-gpgcheck=1
-gpgkey=https://dl.google.com/linux/linux_signing_key.pub
-----------------------------------------------
-
-$ yum -y install google-chrome-stable libOSMesa
-```
-
-必ずChromeDriverとGoogleChromeのバージョンを確認してください。  
-Be sure to check the version of ChromeDriver and GoogleChrome.
-```sh
-$ google-chrome --version
-Google Chrome 80.0.3987.132
-$ chromedriver --version
-ChromeDriver 80.0.3987.106
-```
-
-Seleniumをインストールします。  
-Install Selenium.
-```sh
-$ pip install selenium
-```
+Python3のインストールは各自で、行ってください。それ以降の構築は、「setup.py」より自動で行えます。  
+Please install Python3 by yourself. Subsequent construction can be performed automatically from "setup.py".
 
 当ソースコードをダウンロードし、解凍します。  
 Download and unzip this source code.
@@ -81,14 +38,16 @@ Install Selenium.
 ```sh
 $ git clone https://github.com/TanakashiXr/Yay_BtCl.git
 $ cd Yay_BtCl
+$ python setup.py
 ```
 
 ## Usage / 使用方法
 
-各自の環境に合わせて編集を行ってください。  
+各自の環境に合わせ、「config.ini」の編集を行ってください。  
 Edit according to your environment.
 ```sh
-$ vi auto_clicker.py
+$ cp config_template.ini config.ini
+$ vi config.ini
 $ python auto_clicker.py
 ```
 
