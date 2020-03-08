@@ -7,11 +7,11 @@ assignees: TanakashiXr
 
 ---
 
-**発生しているバグ / Describe the bug**
-バグとは何かについての明確で簡潔な説明
-A clear and concise description of what the bug is.
+## 発生しているバグ / Describe the bug
+ - バグとは何かについての明確で簡潔な説明
+ - A clear and concise description of what the bug is.
 
-**バグの再現手段 / To Reproduce**
+## バグの再現手段 / To Reproduce
 動作を再現する手順：
 Steps to reproduce the behavior:
 1. Go to '...'
@@ -19,14 +19,20 @@ Steps to reproduce the behavior:
 3. Scroll down to '....'
 4. See error
 
-**期待する修正 / Expected behavior**
-あなたが何を期待していたのかについての明確で簡潔な説明
-A clear and concise description of what you expected to happen.
+## 期待する修正 / Expected behavior
+ - あなたが何を期待していたのかについての明確で簡潔な説明
+ - A clear and concise description of what you expected to happen.
 
-**スクリーンショット / Screenshots**
+## スクリーンショット / Screenshots
+<!--
 必要に応じて、問題の説明に役立つスクリーンショット
 If applicable, add screenshots to help explain your problem.
+-->
 
-**実行した環境 / Your operating environment**
+## 実行した環境 / Your operating environment
  - OS : CentOS7
- - Version GoogleChrome,ChromeDriver,Selenium,Python
+Version :
+ - GoogleChrome
+ - ChromeDriver 
+ - Selenium
+ - Python
