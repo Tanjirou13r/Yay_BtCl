@@ -2,7 +2,7 @@
 name: 改善提案 / Improvement proposal
 about: このプロジェクトの改善を提案する（Suggest improvements for this project）
 title: 簡潔で分かりやすいタイトル / Concise and understandable title
-labels: ''
+labels: Improvement（改善）
 assignees: TanakashiXr
 
 ---
