@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, time, pickle, sys, logging, re, random, threading, configparser, requests, json
+import os, time, pickle, sys, logging, re, random, threading, configparser, requests, json, schedule
 #画像ダウンロード
 from urllib import request
 
@@ -63,6 +63,7 @@ options.add_argument('--window-size=1280,1024') #ウィンドウサイズの調�
 driver1_1 = webdriver.Chrome(options=options)
 driver1_2 = webdriver.Chrome(options=options)
 driver1_3 = webdriver.Chrome(options=options)
+driver1_4 = webdriver.Chrome(options=options)
 if mode == 2:
     driver2_1 = webdriver.Chrome(options=options)
     driver2_2 = webdriver.Chrome(options=options)
@@ -77,6 +78,8 @@ try:
     WebDriverWait(driver1_2, 5).until(EC.presence_of_all_elements_located)
     driver1_3.get('https://yay.space/timeline/following')
     WebDriverWait(driver1_3, 5).until(EC.presence_of_all_elements_located)
+    driver1_4.get('https://yay.space/timeline/following')
+    WebDriverWait(driver1_4, 5).until(EC.presence_of_all_elements_located)
     if mode == 2:
         logging.info("Browser2_1 Connection check...")
         driver2_1.get('https://yay.space/timeline/following')
@@ -104,15 +107,19 @@ def login():
             driver1_1.add_cookie(cookie)
             driver1_2.add_cookie(cookie)
             driver1_3.add_cookie(cookie)
+            driver1_4.add_cookie(cookie)
         driver1_1.refresh()
         driver1_2.refresh()
         driver1_3.refresh()
+        driver1_4.refresh()
         WebDriverWait(driver1_1, 5).until(EC.presence_of_all_elements_located)
         WebDriverWait(driver1_2, 5).until(EC.presence_of_all_elements_located)
         WebDriverWait(driver1_3, 5).until(EC.presence_of_all_elements_located)
+        WebDriverWait(driver1_4, 5).until(EC.presence_of_all_elements_located)
         driver1_1.find_element_by_class_name('Header__profile__a')
         driver1_2.find_element_by_class_name('Header__profile__a')
         driver1_3.find_element_by_class_name('Header__profile__a')
+        driver1_4.find_element_by_class_name('Header__profile__a')
         logging.info("Logged in to MainAccount from saved information...")
     except:
         #ログインされていない場合
@@ -149,12 +156,16 @@ def login():
         for cookie in cookies:
             driver1_2.add_cookie(cookie)
             driver1_3.add_cookie(cookie)
+            driver1_4.add_cookie(cookie)
         driver1_2.refresh()
         driver1_3.refresh()
+        driver1_4.refresh()
         WebDriverWait(driver1_2, 5).until(EC.presence_of_all_elements_located)
         WebDriverWait(driver1_3, 5).until(EC.presence_of_all_elements_located)
+        WebDriverWait(driver1_4, 5).until(EC.presence_of_all_elements_located)
         driver1_2.find_element_by_class_name('Header__profile__a')
         driver1_3.find_element_by_class_name('Header__profile__a')
+        driver1_4.find_element_by_class_name('Header__profile__a')
         logging.info("Browser1_2 and Browser1_3 Login completed...")
 
     #サブアカウント
@@ -243,6 +254,58 @@ def login():
             sub_d_vip = "Disable"
         logging.info("Login Status\n< Main Account >\nUSERID:["+my_id.replace("https://yay.space", "") + "] NAME:["+my_name + "] VIP:"+d_vip +
         "\n< Sub Account >\nUSERID:["+sub_my_id.replace("https://yay.space", "") + "] NAME:["+sub_my_name + "] VIP:"+sub_d_vip + "\n")
+
+#----------------------------------------------------------------------------------------------------#
+
+# 前日比の自動投稿
+def job():
+    print("\nスタート\n")
+    # driver1_4 のページリロード
+    driver1_4.find_element_by_class_name('Header__profile').click()
+    WebDriverWait(driver1_4, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="main"]/div/div[1]/div/div/div')))
+    # 現在の値を取得
+    n_posts = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[1]/a/dd').text
+    n_follow = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[4]/a/dd').text
+    n_follower = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[3]/a/dd').text
+    n_letter = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[2]/a/dd').text
+
+    # jsonを読み込み、計算
+    with open("cache/" + email1 + "/comparison_date.json") as f:
+        date = json.load(f)
+    posts = int(n_posts.replace(",", "")) - date["posts"]
+    follow = int(n_follow.replace(",", "")) - date["follow"]
+    follower = int(n_follower.replace(",", "")) - date["follower"]
+    letter = int(n_letter.replace(",", "")) - date["letter"]
+    y_posts = date["yesterday_posts"] - posts
+    y_follow = date["yesterday_follow"] - follow
+    y_follower = date["yesterday_follower"] - follower
+    y_letter = date["yesterday_letter"] - letter
+
+    # 前日比を投稿
+    sent = """こちらは前日比の集計結果です。
+投稿した数 : {0}（前日比 : {1}）
+フォローした数 : {2}（前日比 : {3}）
+フォローされた数 : {4}（前日比 : {5}）
+レターされた数 : {6}（前日比 : {7}）
+""".format(posts, y_posts, follow, y_follow, follower, y_follower, letter, y_letter)
+
+    driver1_4.get("https://yay.space/timeline/following")
+    WebDriverWait(driver1_4, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="main"]/div/div[2]/div/div[1]/div[1]/form/div/div[1]/textarea')))
+    driver1_4.find_element_by_class_name('PostBox__body.PostBox__body--color-0.PostBox__body--fz-0').click()
+    for sent_text in sent.splitlines():
+        driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/form/div/div[1]/div').send_keys(sent_text)
+        driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/form/div/div[1]/div').send_keys(Keys.SHIFT, Keys.ENTER)
+    driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/form/div/div[1]/div').send_keys(Keys.ENTER)
+
+    # 現在の値を書き込み、保存
+    str = {"posts": int(n_posts.replace(",", "")), "likes": 0, "follow": int(n_follow.replace(",", "")), "follower": int(n_follower.replace(",", "")), "rt_to": 0, "rt_me": 0, "letter": int(n_letter.replace(",", "")), "yesterday_posts": posts, "yesterday_likes": 0, "yesterday_follow": follow, "yesterday_follower": follower, "yesterday_rt_to": 0, "yesterday_rt_me": 0, "yesterday_letter": letter}
+    with open("cache/" + email1 + "/comparison_date.json", mode='w') as f:
+        json.dump(str, f, indent=2, ensure_ascii=False)
+def auto_conpari():
+    schedule.every().day.at(config_ini.get('Mode', 'TimeToPost')).do(job)
+    while alive:
+        schedule.run_pending()
+        time.sleep(5)
 
 #----------------------------------------------------------------------------------------------------#
 
@@ -392,7 +455,9 @@ def main_sub():
             driver2_2.find_element_by_class_name('Button.Button--green.Button--icon-chat-send.Button--wrap-content').click()
 
             driver2_2.get('https://yay.space/timeline/all?modalMode=1')
-            WebDriverWait(driver2_2, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/dl/a[1]')))
+            try: WebDriverWait(driver2_2, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="modals"]/div[1]/div/div[2]/dl/a[1]')))
+            except: continue
+
 
 #----------------------------------------------------------------------------------------------------#
 
@@ -710,6 +775,18 @@ if __name__ == "__main__":
         threading.Thread(target = main).start()
         threading.Thread(target = main_sub).start()
         #threading.Thread(target = auto_share).start()
+        if config_ini.get('Mode', 'AutoPostComparison') == "True":
+            if not os.path.exists("cache/" + email1 + "/comparison_date.json"):
+                driver1_4.find_element_by_class_name('Header__profile').click()
+                WebDriverWait(driver1_4, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="main"]/div/div[1]/div/div/div')))
+                posts = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[1]/a/dd').text
+                follow = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[4]/a/dd').text
+                follower = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[3]/a/dd').text
+                letter = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[2]/a/dd').text
+                str = {"posts": int(posts.replace(",", "")), "likes": 0, "follow": int(follow.replace(",", "")), "follower": int(follower.replace(",", "")), "rt_to": 0, "rt_me": 0, "letter": int(letter.replace(",", "")), "yesterday_posts": 0, "yesterday_likes": 0, "yesterday_follow": 0, "yesterday_follower": 0, "yesterday_rt_to": 0, "yesterday_rt_me": 0, "yesterday_letter": 0}
+                with open("cache/" + email1 + "/comparison_date.json", mode='w') as f:
+                    json.dump(str, f, indent=2, ensure_ascii=False)
+            threading.Thread(target = auto_conpari).start()
 
         thread_list = threading.enumerate()
         thread_list.remove(threading.main_thread())
