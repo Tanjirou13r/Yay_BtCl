@@ -259,27 +259,29 @@ def login():
 
 # 前日比の自動投稿
 def job():
-    print("\nスタート\n")
-    # driver1_4 のページリロード
+    # マイページ移動（driver1_4）
     driver1_4.find_element_by_class_name('Header__profile').click()
     WebDriverWait(driver1_4, 5).until(EC.presence_of_element_located((By.XPATH, '//*[@id="main"]/div/div[1]/div/div/div')))
+
     # 現在の値を取得
     n_posts = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[1]/a/dd').text
     n_follow = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[4]/a/dd').text
     n_follower = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[3]/a/dd').text
     n_letter = driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/div/div[2]/dl/div[2]/a/dd').text
 
-    # jsonを読み込み、計算
+    # jsonを読み込み
     with open("cache/" + email1 + "/comparison_date.json") as f:
         date = json.load(f)
+    # 前日と比較（前日との数値の差） = 現在値 - 前日値
     posts = int(n_posts.replace(",", "")) - date["posts"]
     follow = int(n_follow.replace(",", "")) - date["follow"]
     follower = int(n_follower.replace(",", "")) - date["follower"]
     letter = int(n_letter.replace(",", "")) - date["letter"]
-    y_posts = date["yesterday_posts"] - posts
-    y_follow = date["yesterday_follow"] - follow
-    y_follower = date["yesterday_follower"] - follower
-    y_letter = date["yesterday_letter"] - letter
+    # 前日の差と比較 = 計算した差 - 前日差
+    y_posts = posts - date["yesterday_posts"]
+    y_follow = follow - date["yesterday_follow"]
+    y_follower = follower - date["yesterday_follower"]
+    y_letter = letter - date["yesterday_letter"]
 
     # 前日比を投稿
     sent = """こちらは前日比の集計結果です。
@@ -297,10 +299,12 @@ def job():
         driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/form/div/div[1]/div').send_keys(Keys.SHIFT, Keys.ENTER)
     driver1_4.find_element_by_xpath('//*[@id="main"]/div/div[2]/div/div[1]/div[1]/form/div/div[1]/div').send_keys(Keys.ENTER)
 
-    # 現在の値を書き込み、保存
+    # 値を書き込み、保存
     str = {"posts": int(n_posts.replace(",", "")), "likes": 0, "follow": int(n_follow.replace(",", "")), "follower": int(n_follower.replace(",", "")), "rt_to": 0, "rt_me": 0, "letter": int(n_letter.replace(",", "")), "yesterday_posts": posts, "yesterday_likes": 0, "yesterday_follow": follow, "yesterday_follower": follower, "yesterday_rt_to": 0, "yesterday_rt_me": 0, "yesterday_letter": letter}
     with open("cache/" + email1 + "/comparison_date.json", mode='w') as f:
         json.dump(str, f, indent=2, ensure_ascii=False)
+
+
 def auto_conpari():
     schedule.every().day.at(config_ini.get('Mode', 'TimeToPost')).do(job)
     while alive:
